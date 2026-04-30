@@ -57,21 +57,20 @@ function(add_new_target target_name is_synth)
     endif()
 
     juce_add_plugin("${target_name}"
-        PLUGIN_CODE "ysf${CODE_END}"
-        PLUGIN_MANUFACTURER_CODE "S4IK"
-        PRODUCT_NAME "ysfx-s${SUFFIX}"
-        JUCE_PLUGIN_NAME "ysfx-s${SUFFIX}"
+        PLUGIN_CODE "ajf${CODE_END}"
+        PLUGIN_MANUFACTURER_CODE "AdiJ"
+        PRODUCT_NAME "aj-ysfx"
+        JUCE_PLUGIN_NAME "aj-ysfx"
         JUCE_DESCRIPTION "Host for JSFX plugins"
-        COMPANY_NAME "Jean Pierre Cimalando / Joep Vanlier"
-        BUNDLE_ID "Jean_Pierre_Cimalando__Joep_Vanlier"
-        FORMATS VST3 AU
+        COMPANY_NAME "Adi James"
+        BUNDLE_ID "com.adijames.aj-ysfx"
+        FORMATS VST3
         NEEDS_MIDI_INPUT TRUE
         NEEDS_MIDI_OUTPUT TRUE
         NEEDS_CURL FALSE
         NEEDS_WEB_BROWSER FALSE
         IS_SYNTH "${is_synth}"
         VST3_CATEGORIES "${CATEGORY}"
-        AU_MAIN_TYPE "kAudioUnitType_Effect"
         COPY_PLUGIN_AFTER_BUILD "${YSFX_PLUGIN_COPY}")
 
     target_sources("${target_name}"
@@ -131,7 +130,6 @@ function(add_new_target target_name is_synth)
         juce::juce_audio_processors
         juce::juce_gui_basics
         juce::juce_gui_extra
-        juce::juce_opengl
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
 
@@ -145,8 +143,8 @@ function(add_new_target target_name is_synth)
 
     clap_juce_extensions_plugin(
         TARGET "${target_name}"
-        PLUGIN_NAME "ysfx-s${SUFFIX}"
-        CLAP_ID "org.saike.ysfx-s${CLAP_SUFFIX}"
+        PLUGIN_NAME "aj-ysfx"
+        CLAP_ID "org.saike.aj-ysfx"
         CLAP_FEATURES "${CLAP_TYPE}"
         CLAP_PROCESS_EVENTS_RESOLUTION_SAMPLES 64
         CLAP_USE_JUCE_PARAMETER_RANGES DISCRETE
@@ -154,5 +152,4 @@ function(add_new_target target_name is_synth)
         MANUFACTURER_CODE S4IK)
 endfunction()
 
-add_new_target(ysfx_plugin_instrument TRUE)
 add_new_target(ysfx_plugin FALSE)

@@ -187,7 +187,7 @@ bool ysfx_config_item_is_valid(const ysfx_config_item& item) {
     if (item.name.size() < 2) return false;
     if (item.var_names.size() < 2) return false;
     if (item.var_values.size() < 2) return false;
-    if (item.var_names.size() != item.var_names.size()) return false;
+    if (item.var_names.size() != item.var_values.size()) return false;
 
     for (auto v : item.var_names) {
         if (v.empty()) return false;

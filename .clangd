@@ -1,2 +1,5 @@
 CompileFlags:
   Add: [-D__CLANGD__]
+
+CompileDatabase:
+  Directory: build

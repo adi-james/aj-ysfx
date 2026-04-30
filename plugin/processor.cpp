@@ -183,35 +183,7 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
 YsfxProcessor::YsfxProcessor()
     : AudioProcessor(BusesProperties()
                      .withInput("Input", juce::AudioChannelSet::stereo(), true)
-                     .withInput("Input 2", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 3", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 4", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 5", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 6", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 7", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 8", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 9", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 10", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 11", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 12", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 13", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 14", juce::AudioChannelSet::stereo(), false)
-                     .withInput("Input 15", juce::AudioChannelSet::stereo(), false)
                      .withOutput("Output", juce::AudioChannelSet::stereo(), true)
-                     .withOutput("Output 2", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 3", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 4", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 5", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 6", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 7", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 8", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 9", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 10", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 11", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 12", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 13", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 14", juce::AudioChannelSet::stereo(), false)
-                     .withOutput("Output 15", juce::AudioChannelSet::stereo(), false)
                      ),
                      
     m_impl(new Impl)
@@ -538,13 +510,12 @@ void YsfxProcessor::Impl::processBlockGenerically(const void *inputs[], void *ou
 
     for (auto group = 0; group < ysfx_max_slider_groups; group++) {
         uint64_t sliderParametersChanged = m_sliderParametersChanged[group].exchange(0);
-    
         if (sliderParametersChanged) {
             auto group_offset = group << 6;
-            for (auto idx = 0; idx < 64; idx++) {
-                if (sliderParametersChanged & ((uint64_t)1 << idx)) {
-                    syncParameterToSlider(group_offset + idx);
-                }
+            while (sliderParametersChanged) {
+                int idx = __builtin_ctzll(sliderParametersChanged);
+                sliderParametersChanged &= sliderParametersChanged - 1;
+                syncParameterToSlider(group_offset + idx);
             }
         }
     }
@@ -752,7 +723,7 @@ bool YsfxProcessor::isBusesLayoutSupported(const BusesLayout &layout) const
     int numInputs = layout.getMainInputChannels();
     int numOutputs = layout.getMainOutputChannels();
 
-    if (numInputs > ysfx_max_channels || numOutputs > ysfx_max_channels)
+    if (numInputs > 2 || numOutputs > 2)
         return false;
 
     return true;

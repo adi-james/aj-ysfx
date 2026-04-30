@@ -128,9 +128,10 @@ ysfx_t *ysfx_new(ysfx_config_t *config)
     auto var_resolver = [](void *userdata, const char *name) -> EEL_F * {
         ysfx_t *fx = (ysfx_t *)userdata;
 
-        /* Not very efficient */
-        std::string lower_name{name};
-        std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(), ysfx::ascii_tolower);
+        size_t len = strlen(name);
+        std::string lower_name(len, '\0');
+        for (size_t i = 0; i < len; ++i)
+            lower_name[i] = ysfx::ascii_tolower(name[i]);
 
         auto it = fx->source.slider_alias.find(lower_name);
         if (it != fx->source.slider_alias.end())
@@ -563,7 +564,6 @@ void ysfx_reinitialize_vars(ysfx_t *fx)
                 && strcmp(name, "gfx_texth")
                 && strcmp(name, "mouse_x")
                 && strcmp(name, "mouse_y")
-                && strcmp(name, "mouse_y")
                 && strcmp(name, "mouse_cap")
                 && strcmp(name, "mouse_wheel")
                 && strcmp(name, "mouse_hwheel")
@@ -640,6 +640,7 @@ void ysfx_fill_file_enums(ysfx_t *fx)
 
         std::string dirpath = ysfx::path_ensure_final_separator((fx->config->data_root + slider.path).c_str());
         ysfx::string_list entries = ysfx::list_directory(dirpath.c_str());
+        slider.enum_names.reserve(entries.size());
 
         for (const std::string &filename : entries) {
             if (!filename.empty() && ysfx::is_path_separator(filename.back()))
@@ -1398,7 +1399,7 @@ bool ysfx_receive_midi(ysfx_t *fx, ysfx_midi_event_t *event)
 
 bool ysfx_receive_midi_from_bus(ysfx_t *fx, uint32_t bus, ysfx_midi_event_t *event)
 {
-    return ysfx_midi_get_next_from_bus(fx->midi.out.get(), 0, event);
+    return ysfx_midi_get_next_from_bus(fx->midi.out.get(), bus, event);
 }
 
 uint32_t ysfx_current_midi_bus(ysfx_t *fx)
@@ -1521,14 +1522,19 @@ void ysfx_process_generic(ysfx_t *fx, const Real *const *ins, Real *const *outs,
         // compute @sample, once per frame
         if (fx->code.sample) {
             EEL_F **spl = fx->var.spl;
+            // Cache channel pointers to avoid double-dereference and help alias analysis
+            const Real *src[ysfx_max_channels] = {};
+            Real *dst[ysfx_max_channels] = {};
+            for (uint32_t ch = 0; ch < num_ins; ++ch) src[ch] = ins[ch];
+            for (uint32_t ch = 0; ch < num_outs; ++ch) dst[ch] = outs[ch];
             for (uint32_t i = 0; i < num_frames; ++i) {
                 for (uint32_t ch = 0; ch < num_ins; ++ch)
-                    *spl[ch] = (EEL_F)ins[ch][i] + denorm_value;
+                    *spl[ch] = (EEL_F)src[ch][i] + denorm_value;
                 for (uint32_t ch = num_ins; ch < num_code_ins; ++ch)
                     *spl[ch] = denorm_value;
                 NSEEL_code_execute(fx->code.sample.get());
                 for (uint32_t ch = 0; ch < num_outs; ++ch)
-                    outs[ch][i] = (Real)*spl[ch];
+                    dst[ch][i] = (Real)*spl[ch];
             }
         }
 

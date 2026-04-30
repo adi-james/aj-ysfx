@@ -393,16 +393,21 @@ void YsfxEditor::Impl::grabInfoAndUpdate()
         updateInfo();
     }
 
-    for (uint8_t i = 0; i < ysfx_max_slider_groups; i++) {
+    {
         ysfx_t *fx = m_info.get()->effect.get();
-
         if (fx) {
-            uint64_t newValue = ysfx_get_slider_visibility(fx, i);
-            if (newValue != m_sliderVisible[i]) {
-                m_sliderVisible[i] = newValue;
-                m_visibleSlidersChanged = true;
+            bool changed = false;
+            for (uint8_t i = 0; i < ysfx_max_slider_groups; i++) {
+                uint64_t newValue = ysfx_get_slider_visibility(fx, i);
+                if (newValue != m_sliderVisible[i]) {
+                    m_sliderVisible[i] = newValue;
+                    changed = true;
+                }
             }
-            if (m_visibleSlidersChanged) relayoutUILater();
+            if (changed) {
+                m_visibleSlidersChanged = true;
+                relayoutUILater();
+            }
         }
     }
     
@@ -474,7 +479,7 @@ void YsfxEditor::Impl::updateInfo()
 
     juce::String ioText;
     uint32_t numInputs = ysfx_get_num_inputs(fx);
-    uint32_t numOutputs = ysfx_get_num_inputs(fx);
+    uint32_t numOutputs = ysfx_get_num_outputs(fx);
     if (numInputs != 0 && numOutputs != 0)
         ioText = juce::String(numInputs) + " in " + juce::String(numOutputs) + " out";
     else if (numInputs != 0)
@@ -510,7 +515,7 @@ void YsfxEditor::Impl::updateInfo()
         m_ideView->setStatusText(info->errors.getReference(0));
         juce::String errors = juce::String(TRANS("Error(s) parsing JSFX:\n"));
         for (auto i = 0; i < info->errors.size(); i++) {
-            errors += info->errors.getReference(0) + std::string("\n");
+            errors += info->errors.getReference(i) + "\n";
         }
         m_lblError->setText(errors, juce::dontSendNotification);
     } else if (!info->warnings.isEmpty())
@@ -1310,11 +1315,12 @@ void YsfxEditor::Impl::relayoutUI()
         juce::Array<YsfxParameter *> params2;
         params2.ensureStorageAllocated(ysfx_max_sliders);
         for (auto group = 0; group < ysfx_max_slider_groups; ++group) {
+            uint64_t mask = m_sliderVisible[group];
             auto group_offset = group << 6;
-            for (auto idx = 0; idx < 64; idx++) {
-                if (m_sliderVisible[group] & ((uint64_t)1 << idx)) {
-                    params2.add(m_proc->getYsfxParameter(group_offset + idx));
-                }
+            while (mask) {
+                int idx = __builtin_ctzll(mask);
+                mask &= mask - 1;
+                params2.add(m_proc->getYsfxParameter(group_offset + idx));
             }
         }
         m_visibleSlidersChanged = false;
@@ -1330,9 +1336,10 @@ void YsfxEditor::Impl::relayoutUI()
         }
     }
 
+    const juce::Font &labelFont = m_lblFilePath->getFont();
     int max_text_width = 0;
-    for (auto line : lines) {
-        int current_text_width = static_cast<int>(m_lblFilePath->getFont().getStringWidthFloat(line));
+    for (const auto &line : lines) {
+        int current_text_width = static_cast<int>(labelFont.getStringWidthFloat(line));
         if (current_text_width > max_text_width) max_text_width = current_text_width;
     }
 
@@ -1393,7 +1400,7 @@ void YsfxEditor::Impl::relayoutUI()
 
         if (parameterHeight) {
             viewed = m_miniParametersPanel.get();
-            viewed->setSize(paramArea.getWidth(), m_miniParametersPanel->getRecommendedHeight(0));
+            viewed->setSize(paramArea.getWidth(), recommended);
             
             m_topViewPort->setBounds(paramArea);
             m_divider->setBounds(m_topViewPort->getX(), m_topViewPort->getHeight() - 4, m_topViewPort->getWidth(), 4);

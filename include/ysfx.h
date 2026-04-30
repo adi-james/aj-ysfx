@@ -53,8 +53,8 @@ typedef double ysfx_real;
 
 enum {
     ysfx_max_sliders = 256,
-    ysfx_max_channels = 64,
-    ysfx_max_midi_buses = 16,
+    ysfx_max_channels = 8,       // stereo + 6 scratch channels for JSFX internal use
+    ysfx_max_midi_buses = 1,
     ysfx_max_triggers = 10,
     ysfx_max_slider_groups = 4,  // needs to be ysfx_max_sliders / 64
     ysfx_max_default_vars = 1024,  // needs to be bigger than max_sliders + all the built in variables
